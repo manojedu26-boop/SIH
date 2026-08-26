@@ -1,9 +1,9 @@
 /* Civic Signal Atlas: original React Bits-inspired motion primitives for evidence-led discovery. */
 import { useCallback, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState, forwardRef } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
-import type { MotionStyle, MotionValue } from 'framer-motion';
 import Lenis from 'lenis';
-import { motion, useMotionValueEvent, useReducedMotion, useScroll, useTransform } from 'framer-motion';
+import { motion, useScroll, useTransform } from 'framer-motion';
+import DepthCarousel from '@/components/DepthCarousel';
 import { ArrowUpRight, ChevronDown, Crosshair, Play, Pause } from 'lucide-react';
 
 const signals = [
@@ -176,65 +176,16 @@ export const ScrollStack = forwardRef<ScrollStackHandle, ScrollStackProps>(funct
   );
 });
 
-function SignalScrollCard({ signal, index, active, scrollY, stageTop, onActivate }: { signal: typeof signals[number]; index: number; active: boolean; scrollY: MotionValue<number>; stageTop: number; onActivate: () => void }) {
-  const reduceMotion = useReducedMotion();
-  const start = stageTop + index * 240;
-  const y = useTransform(scrollY, [stageTop, start, start + 80, start + 260, stageTop + 1200], [index * 22, index * 22, index * 6, -150 - index * 20, -250 - index * 24]);
-  const scale = useTransform(scrollY, [stageTop, start, start + 80, start + 260, stageTop + 1200], [0.91 - index * 0.025, 0.91 - index * 0.025, 1, 0.92, 0.82]);
-  const rotate = useTransform(scrollY, [stageTop, start, start + 80, start + 260, stageTop + 1200], [(index - 1) * 10, (index - 1) * 10, 0, index % 2 ? -6 : 6, index % 2 ? -10 : 10]);
-  const opacity = useTransform(scrollY, [stageTop, start, start + 80, start + 360, stageTop + 1200], [index === 0 ? 1 : 0.72, index === 0 ? 1 : 0.72, 1, 0.84, 0.58]);
-  const style = { y: reduceMotion ? 0 : y, scale: reduceMotion ? 1 : scale, rotate: reduceMotion ? 0 : rotate, opacity, '--signal': signal.color, zIndex: active ? 20 : signals.length - index } as unknown as MotionStyle;
-  return <motion.button className={`signal-card signal-card--continuous ${active ? 'is-active' : ''}`} style={style} onClick={onActivate} aria-label={`Show ${signal.label}`}>
-    <img src={signal.image} alt="" /><span className="signal-card__veil" /><span className="signal-card__meta"><small>RISK {signal.score}</small><b>{signal.label}</b><em>{signal.meta}</em></span>
-  </motion.button>;
-}
-
 export function Hero7Carousel() {
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
-  const [stageTop, setStageTop] = useState(0);
-  const [inView, setInView] = useState(false);
-  const stageRef = useRef<HTMLDivElement>(null);
-  const { scrollY } = useScroll();
-
-  useLayoutEffect(() => {
-    const update = () => setStageTop((stageRef.current?.getBoundingClientRect().top ?? 0) + window.scrollY);
-    update();
-    window.addEventListener('resize', update);
-    return () => window.removeEventListener('resize', update);
-  }, []);
-
-  useEffect(() => {
-    const node = stageRef.current;
-    if (!node) return;
-    const observer = new IntersectionObserver(([entry]) => setInView(entry.isIntersecting), { threshold: 0.2 });
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, []);
-
-  useMotionValueEvent(scrollY, 'change', (latest) => {
-    const relative = latest - stageTop;
-    const next = Math.max(0, Math.min(signals.length - 1, Math.floor(Math.max(0, relative) / 240)));
-    setActive((current) => current === next ? current : next);
-  });
-
-  useEffect(() => {
-    if (paused || !inView) return;
-    const id = window.setInterval(() => {
-      const next = (active + 1) % signals.length;
-      window.scrollTo({ top: stageTop + next * 240, behavior: 'smooth' });
-    }, 4800);
-    return () => window.clearInterval(id);
-  }, [active, inView, paused, stageTop]);
-
-  return (
-    <div className="hero7-stage hero7-scroll-zone" ref={stageRef} aria-label="Scrollable project signal stack">
-      <div className="hero7-particles" aria-hidden="true">{Array.from({ length: 26 }).map((_, i) => <i key={i} style={{ '--i': i } as CSSProperties} />)}</div>
-      <div className="hero7-orbit orbit-a" /><div className="hero7-orbit orbit-b" />
-      {signals.map((signal, index) => <SignalScrollCard key={signal.label} signal={signal} index={index} active={index === active} scrollY={scrollY} stageTop={stageTop} onActivate={() => window.scrollTo({ top: stageTop + index * 240, behavior: 'smooth' })} />)}
-      <div className="hero7-caption"><span className="eyebrow">LIVE SIGNAL / {String(active + 1).padStart(2, '0')}</span><strong>{signals[active].note}</strong><button className="icon-button" onClick={() => setPaused((value) => !value)} aria-label={paused ? 'Resume automatic scan' : 'Pause automatic scan'}>{paused ? <Play size={15} /> : <Pause size={15} />}</button></div>
-    </div>
-  );
+  const items = signals.map((signal) => ({ ...signal, alt: `${signal.label} evidence image` }));
+  return <div className="hero7-stage hero7-depth-stage" aria-label="MPLADS evidence depth carousel">
+    <div className="hero7-particles" aria-hidden="true">{Array.from({ length: 26 }).map((_, i) => <i key={i} style={{ '--i': i } as CSSProperties} />)}</div>
+    <div className="hero7-orbit orbit-a" /><div className="hero7-orbit orbit-b" />
+    <DepthCarousel items={items} cardWidth={300} cardHeight={380} depth={220} spread={90} tilt={22} tiltDirection="right" perspective={1400} visibleCards={4} falloff={0.2} blur={6} autoplay={!paused} autoplayDelay={3200} loop showControls showIndicators onChange={(index) => setActive(index)} />
+    <div className="hero7-caption"><span className="eyebrow">LIVE SIGNAL / {String(active + 1).padStart(2, '0')}</span><strong>{signals[active].note}</strong><button className="icon-button" onClick={() => setPaused((value) => !value)} aria-label={paused ? 'Resume automatic scan' : 'Pause automatic scan'}>{paused ? <Play size={15} /> : <Pause size={15} />}</button></div>
+  </div>;
 }
 
 export function Hero9Reveal() {

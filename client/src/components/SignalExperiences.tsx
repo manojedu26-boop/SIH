@@ -1,5 +1,5 @@
 /* Civic Signal Atlas: original React Bits-inspired motion primitives for evidence-led discovery. */
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { ArrowUpRight, ChevronDown, Crosshair, Play, Pause } from 'lucide-react';
 
@@ -34,13 +34,13 @@ export function Hero7Carousel() {
 }
 
 export function Hero9Reveal() {
-  const { scrollYProgress } = useScroll();
-  const blur = useTransform(scrollYProgress, [0, 0.18], [12, 0]);
-  const opacity = useTransform(scrollYProgress, [0, 0.14], [0.35, 1]);
+  const [active, setActive] = useState(false);
+  useEffect(() => { const id = window.requestAnimationFrame(() => setActive(true)); return () => window.cancelAnimationFrame(id); }, []);
   return <section className="hero9-reveal" id="signal-map">
     <img src="/manus-storage/mplad-hero-field_5e7eeedd.jpg" alt="Abstract district signal map" />
     <div className="hero9-scanline" />
-    <div className="hero9-copy"><span className="eyebrow">MPLAD SENTINEL / 01</span><motion.h2 style={{ filter: useTransform(blur, (v) => `blur(${v}px)`), opacity }}>See the pattern<br /><em>before it disappears.</em></motion.h2><motion.p style={{ opacity }}>A watchful layer over public works data — finding the records that deserve a second look.</motion.p><a href="#how-it-works" className="text-link">Explore the detection model <ArrowUpRight size={16} /></a></div>
+    <div className="hero9-copy"><span className="eyebrow">MPLAD SENTINEL / 01</span><h2 className={active ? 'is-revealed' : ''}>Find the projects<br /><em>that don’t add up.</em></h2><p>A watchful intelligence layer over public works data — connecting financial, geographic, and execution signals before they become invisible in the aggregate.</p><div className="hero-actions"><a href="#signals" className="button-coral cursor-target">Open the signal field <ArrowUpRight size={16} /></a><a href="#how-it-works" className="text-link cursor-target">How detection works <ArrowUpRight size={16} /></a></div></div>
+    <motion.div className="hero-console" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: .45, duration: .6 }}><div><span className="console-dot" /> SYSTEM ONLINE</div><strong>03,842</strong><small>RECORDS IN REVIEW</small><div className="console-divider" /><strong>04</strong><small>SIGNAL CLASSES</small></motion.div>
     <div className="hero9-footer"><span>SCROLL TO REVEAL</span><ChevronDown size={16} /></div>
   </section>;
 }

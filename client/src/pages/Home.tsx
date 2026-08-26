@@ -1,25 +1,26 @@
-import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
-import { Streamdown } from 'streamdown';
+/* Civic Signal Atlas: asymmetrical briefing-room composition; dark cartography, coral evidence, revealing motion. */
+import { useState } from 'react';
+import { ArrowDownRight, ArrowUpRight, Check, ChevronRight, CircleAlert, Database, FileSearch, MapPin, Radar, ShieldCheck, SlidersHorizontal } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Hero7Carousel, Hero9Reveal, ScrollExpand, TargetCursor } from '@/components/SignalExperiences';
 
-/**
- * All content in this page are only for example, replace with your own feature implementation
- * When building pages, remember your instructions in Frontend Best Practices, Design Guide and Common Pitfalls
- */
+const riskRows = [
+  ['MH-2024-1187', 'Nashik / Water infrastructure', 'Duplicate work', '87', 'Rule + NLP'],
+  ['RJ-2024-0412', 'Kota / Rural road', 'Execution gap', '76', 'Fund flow'],
+  ['KA-2023-0920', 'Mysuru / Sanitation', 'Vendor outlier', '63', 'Graph signal'],
+];
+
 export default function Home() {
-  // If theme is switchable in App.tsx, we can implement theme toggling like this:
-  // const { theme, toggleTheme } = useTheme();
-
-  return (
-    <div className="min-h-screen flex flex-col">
-      <main>
-        {/* Example: lucide-react for icons */}
-        <Loader2 className="animate-spin" />
-        Example Page
-        {/* Example: Streamdown for markdown rendering */}
-        <Streamdown>Any **markdown** content</Streamdown>
-        <Button variant="default">Example Button</Button>
-      </main>
-    </div>
-  );
+  const [activeTab, setActiveTab] = useState('overview');
+  return <div className="site-shell"><TargetCursor />
+    <header className="site-header"><a href="#top" className="wordmark cursor-target"><img src="/manus-storage/mplad-sentinel-mark_5650636e.png" alt="" /><span><b>MPLAD</b><small>SENTINEL</small></span></a><nav><a href="#how-it-works" className="cursor-target">How it works</a><a href="#signals" className="cursor-target">Signals</a><a href="#method" className="cursor-target">Method</a></nav><a href="#investigate" className="header-action cursor-target">Open investigator view <ArrowUpRight size={15} /></a></header>
+    <main id="top">
+      <section className="hero-shell"><Hero9Reveal /><div className="hero7-panel"><div className="panel-kicker"><span>02 / SIGNAL FIELD</span><span>FY 2023–24 →</span></div><Hero7Carousel /></div><div className="hero-side-note"><span className="vertical-label">CIVIC INTELLIGENCE / PUBLIC WORKS</span><span className="scroll-mark">01 — 04</span></div></section>
+      <section className="briefing-intro" id="how-it-works"><div className="section-index">01 <span>WHAT WE WATCH</span></div><div className="intro-copy"><div className="source-stamp">MPLAD SENTINEL / INTELLIGENCE LAYER</div><h1>Sentinel sees what public records <em>leave unresolved.</em></h1><p>MPLAD Sentinel reads public scheme records — including eSAKSHI inputs — and turns them into an explainable review queue. It surfaces financial anomalies, duplicate or ghost projects, execution delays, and behavioral outliers across districts.</p><a className="text-link cursor-target" href="#signals">See the signal taxonomy <ArrowDownRight size={17} /></a></div><div className="intro-aside"><div className="metric-big">4<span>signal classes</span></div><p>Every flag carries a plain-language reason, a source trace, and the rule or model feature that fired.</p></div></section>
+      <section className="signal-section" id="signals"><div className="field-rail">FIELD NOTE 02 / REVIEW QUEUE</div><div className="section-heading"><div><span className="eyebrow">02 / REVIEW QUEUE</span><h2>Where the numbers<br /><em>stop making sense.</em></h2></div><p>Signals are not verdicts. They are a defensible starting point for audit teams, journalists, and citizens.</p></div><div className="risk-table-wrap"><div className="table-top"><span><Radar size={16} /> LIVE DEMO DATASET</span><span>3,842 records scanned <i>●</i></span></div><div className="risk-table">{riskRows.map((r) => <div className="risk-row" key={r[0]}><span className="risk-id">{r[0]}</span><span className="risk-project">{r[1]}</span><span className="risk-type">{r[2]}</span><span className={`risk-score score-${r[3]}`}>{r[3]}</span><span className="risk-method">{r[4]}</span><button className="row-arrow cursor-target" aria-label={`Open ${r[0]}`}><ChevronRight size={17} /></button></div>)}</div><div className="table-bottom"><span>Showing 3 of 3,842 review candidates</span><a href="#investigate" className="cursor-target">Open full queue <ArrowUpRight size={14} /></a></div></div></section>
+      <section className="evidence-section"><div className="evidence-stamp">SOURCE TRACE / 03</div><ScrollExpand><img src="/manus-storage/mplad-investigation_3b4bbb25.jpg" alt="Investigation desk with district map and project records" /><div className="evidence-overlay"><span className="evidence-frame-mark">[ SNTL / 03 ]</span><span className="eyebrow">EXPLAINABLE BY DESIGN</span><h2>Trace every flag<br /><em>back to the rule.</em></h2><p>Risk scores remain legible: ineligible purpose, duplicate description, anomalous utilization, or contractor concentration — each surfaced as evidence, not a black box.</p></div></ScrollExpand></section>
+      <section className="method-section" id="method"><div className="section-index">03 <span>THE DETECTION MODEL</span></div><div className="method-grid"><div className="method-lead"><h2>From public record<br />to <em>reviewable signal.</em></h2><p>A unified schema lets rule-based checks and statistical patterns work together without pretending the data is cleaner than it is.</p><a href="#investigate" className="button-coral cursor-target">Walk through a case <ArrowUpRight size={16} /></a></div>{[['01', 'Ingest', 'eSAKSHI, data.gov.in, Dataful, PIB, and CAG source traces.', Database], ['02', 'Compare', 'NLP similarity, fund-flow ratios, geo clustering, and behavioral baselines.', SlidersHorizontal], ['03', 'Explain', 'A 0–100 score with the exact rule, feature, and record behind it.', ShieldCheck]].map(([n, title, copy, Icon]) => <div className="method-card" key={n as string}><span>{n as string}</span><div className="method-icon"><Icon size={20} /></div><h3>{title as string}</h3><p>{copy as string}</p></div>)}</div></section>
+      <section className="investigator-section" id="investigate"><div className="investigator-visual"><img src="/manus-storage/mplad-district-texture_d6fee9ee.jpg" alt="District map texture" /><div className="map-spot spot-a" /><div className="map-spot spot-b" /><div className="map-spot spot-c" /></div><div className="investigator-copy"><span className="eyebrow">04 / NEXT ACTION</span><h2>Move from<br /><em>signal to scrutiny.</em></h2><p>Switch between a public transparency view and a restricted investigator workspace with case flagging, audit notes, and exportable trails.</p><div className="tabs">{['overview', 'investigator'].map((tab) => <button key={tab} className={`cursor-target ${activeTab === tab ? 'active' : ''}`} onClick={() => setActiveTab(tab)}>{tab === 'overview' ? 'Public view' : 'Investigator view'} <ChevronRight size={14} /></button>)}</div><div className="mode-note"><CircleAlert size={16} /><span>{activeTab === 'overview' ? 'Public mode shows patterns without exposing personal or sensitive details.' : 'Investigator mode prepares a review queue with case notes and source trace.'}</span></div></div></section>
+    </main><footer className="site-footer"><span>© 2026 MPLAD SENTINEL</span><span>BUILT FOR ACCOUNTABILITY / NOT ACCUSATION</span><a href="#top" className="cursor-target">Back to top <ArrowUpRight size={13} /></a></footer>
+  </div>;
 }

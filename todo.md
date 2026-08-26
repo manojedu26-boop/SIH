@@ -1,17 +1,8 @@
-# MPLAD Sentinel Analytics Enhancement
+# MPLAD Sentinel Mobile Density and Continuous Scroll
 
-- [x] Research authoritative public-sector anomaly, fraud, and monitoring visualization patterns.
-- [x] Research relevant official MPLADS/eSAKSHI/data.gov.in data sources and their boundaries.
-- [x] Select the best chart set for this product: anomaly taxonomy, stage funnel, district/state comparison, and explainable score breakdown.
-- [x] Define a clearly labeled illustrative analytics model until verified live data is connected.
-- [x] Implement interactive charts with accessible tooltips, filters, and responsive layouts.
-- [x] Validate chart readability, factual labeling, mobile behavior, and production build.
-- [ ] Save a new checkpoint and report the analytics enhancement.
-
-## Resumed implementation pass
-
-- [x] Implement a compact analytics overview with interactive view controls.
-- [x] Add scheme-stage funnel, anomaly-family bars, geography comparison, and explainability breakdown.
-- [x] Add accessible tooltips, legends, keyboard focus, and clear illustrative-data labeling.
-- [x] Validate desktop/mobile charts and run the production build.
-- [ ] Save a new checkpoint and report the analytics enhancement.
+- [x] Inspect the current mobile rules and opening ScrollStack motion flow.
+- [x] Tighten mobile typography, spacing, metadata, and section density without harming readability.
+- [x] Make the opening photo stack respond continuously to scroll progress rather than discrete thresholds.
+- [x] Preserve touch scrolling, reduced-motion fallback, and accessible controls.
+- [x] Validate narrow mobile, tablet, desktop, and production build behavior.
+- [ ] Save a new checkpoint and report the fixes.

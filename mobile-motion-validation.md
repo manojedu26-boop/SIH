@@ -1,0 +1,5 @@
+# Mobile Density and Continuous Scroll Validation
+
+The opening signal stack now uses the document page scroll as its continuous motion source. Each evidence card receives a smooth scroll-linked translate, scale, rotation, and opacity interpolation, so the stack changes continuously rather than only after an internal scroller threshold. Automatic advancement is gated to the stack being visible and does not hijack the page before the user reaches it. The stack remains keyboard clickable, touch scrollable through the page, and falls back to static layered cards under prefers-reduced-motion.
+
+Mobile density was tightened through smaller but still readable display type, reduced section gaps, compact metadata, denser workflow rows, smaller evidence padding, full-width mobile actions, and a sticky signal stage inside a taller mobile scroll zone. Desktop keeps the asymmetric hero and side-by-side evidence treatment. Type check, production build, 390px full-page preview, and 1280px full-page preview pass.

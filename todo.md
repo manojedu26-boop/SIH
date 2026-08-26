@@ -1,7 +1,8 @@
-# MPLAD Sentinel Landing Revision
+# MPLAD Sentinel GitHub Sync and Mobile Pass
 
-- [x] Remove the excessive initial blur from the hero headline while preserving a subtle reveal interaction.
-- [x] Strengthen first-screen hierarchy with a clearer headline, active scan status, and stronger focal composition.
-- [x] Add more engaging hero micro-interactions without compromising readability or the Civic Signal Atlas material rules.
-- [x] Validate the revised desktop and mobile landing states.
-- [ ] Save a new checkpoint and report the revision.
+- [ ] Inspect the provided GitHub repository and confirm its branch and access state.
+- [ ] Audit mobile behavior for hero layout, overflow, typography, controls, and tap targets.
+- [ ] Implement the mobile optimization pass without diluting the Civic Signal Atlas design.
+- [ ] Validate 390px and 768px responsive states plus the production build.
+- [ ] Commit and push the finished code to the provided GitHub repository.
+- [ ] Save a checkpoint and report the sync result.

@@ -1,0 +1,518 @@
+SIH26102 — AI-Powered Detection of
+Anomalies, Fraud & Inefficiencies in the
+MPLAD Scheme
+Detailed Technical & Strategic Report — Smart India Hackathon
+
+
+
+1. Executive Summary
+The Members of Parliament Local Area Development Scheme (MPLADS) is a
+₹5-crore-per-MP, per-year Central Sector Scheme through which elected representatives
+recommend local infrastructure works — drinking water, sanitation, roads, schools, health
+facilities — executed by District Authorities. It moves roughly ₹3,800–4,000 crore of public
+money every year across 786+ MPs (Lok Sabha + Rajya Sabha), yet it has been repeatedly
+flagged by the Comptroller and Auditor General (CAG) for poor monitoring, delayed
+execution, and diversion of funds to ineligible or duplicate works.
+
+SIH26102 asks for an AI system that ingests MPLADS project and expenditure data, detects
+suspicious spending patterns, duplicate/ghost projects, chronic delays, and statistical
+outliers, assigns each project a risk score, and surfaces everything through an
+investigator-facing dashboard. This report gives a complete technical and strategic blueprint:
+problem framing, prior art, data landscape, system architecture, the specific
+anomaly-detection and fraud-detection methods to use (and why), the risk-scoring formula,
+the dashboard design, a tech stack, a build roadmap, feasibility analysis, and the pitch-level
+differentiators that will matter to judges.
+
+
+
+
+2. Understanding the Problem Statement
+2.1 What SIH26102 is actually asking for, decomposed
+   Stated requirement                       What it really means technically
+
+ "Analyses government        Build a data pipeline that ingests structured (and
+ project and funding data"   semi-structured) records: works recommended, works
+                             sanctioned, expenditure released, completion status
+
+ "Detects suspicious         Four distinct detection sub-systems: (a) spending anomaly
+ spending, duplicate         detection, (b) duplicate/near-duplicate project detection (text +
+ projects, delays and        geo + cost similarity), (c) delay/SLA-breach detection, (d)
+ unusual patterns"           general statistical outlier detection
+ "Gives projects a risk      A composite, explainable scoring model (not a black box) that
+ score and flags for         investigators can act on
+ investigation"
+
+ "Dashboard shows where      A geospatial + tabular dashboard: money flow visualization,
+ funds are being used and    drill-down by state/constituency/MP/district, flagged-project
+ potential irregularities"   queue
+
+ "Improve transparency       Public-facing transparency layer + an internal
+ and accountability"         investigator/audit layer — these are two different UIs with two
+                             different access levels
+
+
+2.2 Why this is a strong pick
+
+   ●​ Real, well-documented pain point: CAG audits and multiple RTI-based
+      investigations have repeatedly found under-utilization, delayed completion, and
+      diversion of MPLADS funds — this isn't a hypothetical problem statement, it's a live
+      governance failure with a paper trail you can cite.
+   ●​ Public data exists: Unlike many "detect fraud" hackathon prompts that quietly
+      assume a dataset nobody can access, MPLADS actually publishes usable data (see
+      Section 4). This de-risks the project enormously — you are not going to get stuck at
+      hour 10 with no data to demo on.
+   ●​ Naturally demoable: Fraud/anomaly detection on government spending is visual
+      and intuitive — a map that lights up red on a suspicious district is an instantly legible
+      demo, which matters a lot for judging under time pressure.
+   ●​ Clear novelty angle available: Most teams that pick this will build a generic "upload
+      CSV → isolation forest → dashboard" solution. The differentiators in Section 9
+      (duplicate-work detection via NLP + geospatial clustering, vendor/contractor graph
+      analysis, explainable risk scoring) are what will separate a winning submission from a
+      median one.
+
+
+
+
+3. Background: What the MPLAD Scheme Actually Is
+Understanding the scheme's real mechanics is essential — you will be asked pointed
+questions by judges about domain understanding, not just the model.
+
+   ●​ Origin: Launched 23 December 1993 as a Central Sector Scheme; moved from the
+      Ministry of Rural Development to the Ministry of Statistics and Programme
+      Implementation (MoSPI) in 1994, which has administered it since.
+   ●​ Purpose: Enables each MP to recommend durable community assets — drinking
+      water, sanitation, primary education infrastructure, public health, roads, electricity —
+      based on locally felt needs, in sectors and quantities they choose within the
+      guidelines.
+   ●​ Fund flow: each MP is allocated ₹5 crore per year (since 2011-12), released by
+      MoSPI to district authorities in two installments of ₹2.5 crore. This fund is
+      non-lapsable and can be carried forward if not utilised in a given year.
+   ●​ Who can recommend what: Lok Sabha MPs recommend works in their own
+      constituency; Rajya Sabha MPs recommend works anywhere in their state of
+      election; nominated MPs can recommend works anywhere in the country — this
+      cross-district flexibility for RS/nominated MPs is itself a place where
+      duplicate/overlapping recommendations become possible and worth modeling.
+   ●​ Mandatory social allocation: MPs must allocate a minimum of 15% and 7.5% of
+      their funds to create assets for Scheduled Castes and Scheduled Tribes respectively
+      — a rule your system should explicitly check compliance against per MP per year (an
+      easy, high-value, low-effort feature).
+   ●​ Role separation (important for fraud modeling): The MP's role stops at
+      recommending a work. Sanctioning, execution and completion within the stipulated
+      time is the responsibility of the District Authority, and the exact expenditure figures
+      are available only with the District Authorities — meaning your fraud signals should
+      be architected around District Authority + Implementing Agency behavior, not
+      just "which MP is corrupt," since that's where execution-stage fraud (inflated billing,
+      fictitious completion, vendor collusion) actually happens.
+   ●​ Digitization milestone: the MPLADS–eSAKSHI web portal (mplads.mospi.gov.in)
+      was introduced from 1 April 2023 to manage the revised fund-flow procedure, with a
+      revamped public dashboard showing works recommended, works sanctioned, works
+      completed, and expenditure on completed and ongoing works, with drill-down tabs.
+      Before that, the scheme ran in physical mode and district-wise work data was
+      maintained locally by District Authorities — meaning pre-2023 data is
+      fragmented/inconsistent, and this is a genuine data-quality problem your report
+      should acknowledge rather than gloss over.
+   ●​ A known suspension event: the scheme was suspended for two years
+      (2020–2022) to fund COVID-19 response and restored from 1 April 2022 — your
+      time-series anomaly models need to know about this gap so they don't flag it as
+      "fraud."
+   ●​ Documented misuse pattern (cite this in your problem-justification slide): funds
+      have been diverted for ineligible projects, sometimes transferred to private trusts
+      controlled by MPs, execution handed to favoured contractors, with no effective
+      mechanism to monitor expenditure, and the CAG has repeatedly made unfavourable
+      observations on the scheme.
+   ●​ What MPLADS funds may not be used for: personal benefit, private institutions,
+      religious structures, land acquisition, or routine maintenance work — this gives you a
+      concrete, checkable eligibility ruleset to encode as rule-based fraud flags (a project
+      categorized under an ineligible purpose is an instant hard flag, no ML required).
+
+
+
+
+4. Data Landscape — What You Can Actually Use
+This is the section most teams skip, and it's the one judges probe hardest ("where does your
+data come from, is it real").
+4.1 Primary real sources
+
+   1.​ MPLADS eSAKSHI public dashboard (mplads.mospi.gov.in) — works
+       recommended, sanctioned, completed, and expenditure figures, with drill-down for
+       detail, current from FY2023-24 onward.
+   2.​ data.gov.in / Dataful.in mirrors — structured historical datasets, e.g. state-,
+       constituency- and MP-wise entitlement/release/sanction/expenditure figures
+       spanning the 12th to 17th Lok Sabhas, and
+       year-/state-/district-/constituency-/MP-wise lists of sanctioned works — these are the
+       most hackathon-usable, clean, tabular datasets available and should be your primary
+       training/demo source.
+   3.​ PIB (Press Information Bureau) releases — periodic ministry statements with
+       state-wise pending-works tables, useful for validating your delay-detection outputs
+       against officially acknowledged backlogs.
+   4.​ CAG audit reports — not a training dataset, but a goldmine of known, confirmed
+       fraud cases you can use as a labeled "ground truth" test set to validate that your
+       anomaly detector actually flags real historical irregularities (this is a very strong thing
+       to show judges: "here is a case CAG confirmed was fraudulent, and our system flags
+       it at risk score 87/100").
+
+4.2 Known data-quality constraints (state these proactively, don't hide
+them)
+
+   ●​ Pre-2023-24 data for Rajya Sabha MPs and pre-2023-24 recommended/sanctioned
+      work-level detail is largely unavailable on eSAKSHI, since the scheme ran in
+      physical/manual mode before then.
+   ●​ No scheme-wide unique project ID standard prior to digitization — duplicate detection
+      pre-2023 must rely on fuzzy matching, not exact-ID joins.
+   ●​ Geolocation is only available at district/constituency granularity in most public
+      datasets, not GPS-level per project — your geospatial layer should be designed
+      around district/constituency polygons, not point coordinates (unless you supplement
+      with a manually geocoded sample for the demo).
+
+4.3 Recommended demo data strategy
+
+Build the pipeline generically, but for the hackathon demo:
+
+   ●​ Use the real Dataful/data.gov.in tabular datasets for 3–5 states as the "real data"
+      backbone (this is your credibility anchor).
+   ●​ Synthetically inject a small number of clearly-labeled fraud patterns (duplicate project
+      descriptions across districts, a district with 95% fund utilization but 0% physical
+      completion, a contractor appearing across an implausible number of unrelated
+      districts) so you can demonstrate detection live, and clearly disclose in the demo
+      which records are real vs. injected for demonstration.
+5. Existing Landscape / Prior Art
+  ●​ eSAKSHI dashboard itself: already shows aggregated
+     recommended/sanctioned/completed/expenditure figures, but it is a reporting tool,
+     not a detection tool — it shows you the numbers, it does not tell you which numbers
+     are suspicious. This is your clearest differentiation line for the pitch: "eSAKSHI tells
+     you what happened, we tell you what's wrong."
+  ●​ CAG audits: manual, sample-based, retrospective (often years after the fact) — your
+     system is continuous and near-real-time by contrast.
+  ●​ General GovTech fraud-analytics academic literature: procurement fraud
+     detection commonly uses Benford's Law on invoice amounts, graph analysis on
+     vendor-official relationships, and NLP similarity on tender descriptions — all directly
+     transferable to MPLADS work descriptions and vendor/contractor data.
+  ●​ Gap you are filling: no existing public tool combines (a) fund-flow anomaly
+     detection, (b) duplicate/ghost-project detection via NLP+geo, and (c) an
+     investigator-facing explainable risk score, specifically for MPLADS. That combination
+     is your unique-value-proposition sentence.
+
+
+
+
+6. Objectives
+  1.​ Ingest multi-year, multi-state MPLADS project and expenditure records into a unified
+      schema.
+  2.​ Detect four categories of irregularity: financial anomalies, duplicate/near-duplicate
+      projects, execution delays, and statistical/behavioral outliers.
+  3.​ Produce a single, explainable 0–100 risk score per project (and roll it up to per-MP
+      and per-district scores).
+  4.​ Present findings via a dual-audience dashboard: a public transparency view and a
+      restricted investigator view with case-flagging and audit-trail export.
+  5.​ Keep every flag explainable — no black-box scores; every flag must show why
+      (which rule or model feature fired).
+
+
+
+
+7. Proposed System Architecture
+        ┌───────────────────────────┐
+        │ Data Sources           │
+        │ eSAKSHI / data.gov.in / │
+        │ Dataful / PIB / CAG PDFs │
+        └─────────────┬─────────────┘
+                │ (scrapers / API pulls / PDF parsing)
+        ┌─────────────▼─────────────┐
+        │ Ingestion & ETL Layer │
+        │ - schema normalization │
+        │ - deduplication of source │
+            │ - entity resolution    │
+            │ (MP, district, vendor) │
+            └─────────────┬─────────────┘
+                      │
+            ┌─────────────▼─────────────┐
+            │ Unified Data Store        │
+            │ (Postgres + PostGIS for │
+            │ geo, + a document store │
+            │ for raw text descriptions)│
+            └─────────────┬─────────────┘
+                      │
+     ┌───────────────────────┼───────────────────────┐
+     │                 │               │
+┌──────▼──────┐                ┌─────────▼─────────┐
+┌─────────▼─────────┐
+│ Financial │        │ Duplicate/Ghost │ │ Delay & SLA        │
+│ Anomaly        │    │ Project Detector │ │ Breach Detector │
+│ Engine        │    │ (NLP + geo        │ │ (time-series / │
+│ (statistical │    │ clustering)     │ │ rule-based)      │
+│ + ML)        │    │              │ │             │
+└──────┬──────┘                └─────────┬─────────┘
+└─────────┬─────────┘
+     │                 │                │
+     └───────────────┬────────┴────────────────┬───────┘
+                  │                │
+            ┌───────▼─────────────────────────▼───────┐
+            │      Risk Scoring Engine           │
+            │ weighted, explainable composite score │
+            └───────────────────┬───────────────────────┘
+                         │
+            ┌───────────────────▼───────────────────────┐
+            │        Dashboard / API Layer         │
+            │ - Public transparency view           │
+            │ - Investigator view (auth-gated)       │
+            │ - Case flagging, notes, export         │
+            └───────────────────────────────────────────┘
+
+
+
+8. Detection Methodology — the Technical Core
+This is the part judges will scrutinize most. Below is method-by-method reasoning, not just a
+list of buzzwords.
+
+8.1 Financial / spending anomaly detection
+  ●​ Benford's Law check on expenditure amounts per district/vendor — a classic,
+     cheap, explainable first-pass fraud signal (real, organic financial data follows a
+     predictable leading-digit distribution; manipulated figures usually don't).
+  ●​ Z-score / IQR outlier detection on per-work cost relative to the median cost of
+     similar-category works (e.g., a "hand pump installation" costing 8x the state median
+     for that category is an instant flag) — simple, explainable, good baseline before you
+     reach for ML.
+  ●​ Isolation Forest / Local Outlier Factor on a multivariate feature vector per project
+     (cost, category, district, time-to-completion, utilization %) to catch anomalies that
+     univariate rules miss.
+  ●​ Utilization-rate anomalies: districts/MPs with unusually high "funds released" but
+     unusually low "physical completion %" — a strong, intuitive proxy for either fund
+     parking or non-execution.
+  ●​ SC/ST allocation compliance check (rule-based, not ML): flag any MP-year where
+     the mandatory 15%/7.5% SC/ST allocation was not met — this is a directly auditable,
+     hard compliance rule and gives you a guaranteed-accurate flag category to show in
+     the demo (no model uncertainty involved).
+
+8.2 Duplicate / ghost project detection
+
+  ●​ Text similarity: embed work descriptions (e.g., using sentence-transformers) and
+     compute cosine similarity across projects within the same district/year to catch
+     near-identical works recommended/sanctioned more than once (a classic MPLADS
+     fraud pattern: the same "community hall" appearing under slightly reworded
+     descriptions in consecutive years).
+  ●​ Geospatial clustering: cluster projects by district/constituency + category +
+     approximate location; a cluster with implausibly many "distinct" works of the same
+     type in the same small area is a red flag for either genuine oversupply or duplicate
+     billing.
+  ●​ Cost-per-unit consistency check: for standardized asset types (e.g., cost per meter
+     of road, cost per handpump), compare against a state-level benchmark; large
+     deviations combined with high text-similarity to another project is a strong
+     duplicate-fraud composite signal.
+
+8.3 Delay / execution-inefficiency detection
+
+  ●​ Guideline benchmark: MPLADS guidelines (paras 3.2.4, 3.2.12, 10.6.1) require
+     completion of projects in a time-bound manner, and industry practice cited in scheme
+     documentation is roughly one year from sanction — model "days since sanction with
+     status ≠ completed" against this benchmark as your core delay metric.
+  ●​ Track chronic-delay districts/agencies — implementing agencies whose average
+     completion time is a statistical outlier vs. peers doing the same category of work.
+  ●​ Use survival-analysis style modeling (e.g., time-to-completion curves per category)
+     so delay flags account for the fact that some categories (e.g., large road works) are
+     legitimately slower than others (e.g., hand pumps) — this avoids naive false
+     positives.
+8.4 Vendor / Implementing Agency graph analysis (high-value
+differentiator)
+
+   ●​ Build a graph: District Authority → Implementing Agency → Vendor/Contractor.
+   ●​ Flag agencies/vendors with anomalous concentration (one contractor executing an
+      implausible share of works across unrelated districts), or with sanction-to-payment
+      timing patterns inconsistent with genuine execution.
+   ●​ This directly targets the CAG-documented pattern of execution being handed to
+      favoured agencies and contractors.
+
+
+
+
+9. Risk Scoring Model
+Design principle: explainable and auditable over accurate-but-opaque. Investigators
+need to defend a flag in a review, so a black-box neural score alone is a liability, not a
+feature.
+
+Composite score (0–100) = weighted sum of normalized sub-scores:
+
+      Component            Weigh                             Source
+                             t
+
+ Financial anomaly         30%      Benford deviation + cost-outlier z-score +
+ sub-score                          utilization-mismatch
+
+ Duplicate/ghost-projec    25%      Text-similarity max + geo-cluster density
+ t sub-score
+
+ Delay sub-score           20%      Days-overdue vs. category benchmark
+
+ Compliance sub-score      15%      SC/ST allocation breach, ineligible-category flag
+                                    (rule-based, binary/hard flags contribute heavily here)
+
+ Vendor/agency graph       10%      Concentration/anomaly score from the agency-vendor
+ sub-score                          graph
+
+Each sub-score above a threshold contributes a human-readable reason string ("Cost is
+6.2x the state median for this work category," "92% text-similarity to Project #4471
+sanctioned 14 months earlier in the same district") which is what actually shows up on the
+investigator's card — the number is secondary to the explanation.
+
+Roll-up scores: project-level → MP-level (average + max of their projects) →
+district/state-level (aggregate risk heatmap) so the dashboard supports drilling both up and
+down.
+10. Dashboard Design
+Two audiences, two views, one data backbone:
+
+   1.​ Public Transparency View (no login)
+          ○​ Choropleth map of India, shaded by state/constituency fund-utilization and
+              aggregate risk.
+          ○​ Search by MP/constituency → shows recommended vs. sanctioned vs.
+              completed works, expenditure timeline, and a plain-language "transparency
+              score."
+          ○​ No individual "fraud" accusation language shown publicly — frame it as
+              "review-recommended" or "data inconsistency flagged," to stay legally
+              responsible in the pitch narrative (judges will respect this nuance).
+   2.​ Investigator / Audit View (auth-gated, role-based)
+          ○​ Ranked queue of flagged projects by risk score, filterable by
+              state/district/category/agency.
+          ○​ Per-project drill-down: full reason breakdown, similar/duplicate project links,
+              vendor graph view, historical trend chart.
+          ○​ Case management: mark as "under review," "confirmed," "false positive" —
+              and feed confirmed/false-positive labels back into the model as weak
+              supervision to improve future scoring (mention this feedback loop explicitly —
+              judges love a model that improves from human review).
+          ○​ Export to PDF/CSV for use in actual CAG/ministry review workflows.
+
+Visualization stack suggestion: choropleth + drill-down works well with Mapbox/Leaflet + D3
+for custom visuals, or Metabase/Superset embedded panels if you want to save build time
+on standard charts and spend your hackathon hours on the detection engine instead — the
+detection engine is what should differentiate you, not the charting library.
+
+
+
+
+11. Suggested Tech Stack
+     Layer                     Suggested tools                             Why
+
+ Ingestion/ETL    Python (pandas, requests,                     Mature ecosystem for
+                  BeautifulSoup/pdfplumber for PIB/CAG          messy government tabular
+                  PDF tables)                                   + PDF data
+
+ Storage          PostgreSQL + PostGIS                          Relational + geospatial in
+                                                                one engine, easy for a
+                                                                hackathon team to stand
+                                                                up quickly
+
+ ML/NLP           scikit-learn (Isolation Forest, LOF),         Well-documented, fast to
+                  sentence-transformers (duplicate text         prototype under time
+                  similarity), NetworkX (vendor graph)          pressure
+ Backend API      FastAPI                                      Fast to scaffold,
+                                                               auto-generates docs, easy
+                                                               auth middleware for the
+                                                               investigator view
+
+ Frontend         React + Leaflet/Mapbox GL + a charting lib   Standard, judge-familiar,
+                  (Recharts/D3)                                fast to build dashboards in
+
+ Auth             Simple JWT-based role separation (public     Enough to demonstrate the
+                  vs. investigator)                            two-tier access model
+                                                               without over-engineering
+
+ Deployment for   Docker Compose, hosted on a free-tier VM     Reliable for a live demo
+ demo             or Render/Railway                            without infra headaches
+
+
+
+
+12. Build Roadmap
+Pre-hackathon (do this before the event, it's what separates top-8 finishes from the
+rest):
+
+   ●​ Pre-download and clean 2–3 states' worth of real Dataful/data.gov.in MPLADS
+      datasets.
+   ●​ Pre-build the ETL schema and a small labeled test set from CAG-documented cases.
+   ●​ Have the Benford's Law + z-score baseline anomaly detectors working on real data
+      before the clock starts — these are fast to build and de-risk your "do we have
+      anything working" moment at hour 6.
+
+During the hackathon (typical 24–36hr window):
+
+   1.​ Hours 0–4: Finalize schema, load real + synthetic demo data, stand up
+       Postgres/PostGIS.
+   2.​ Hours 4–10: Build financial anomaly engine (Benford + z-score + Isolation Forest)
+       and the rule-based compliance checks (fast wins, guaranteed-accurate flags).
+   3.​ Hours 10–16: Build duplicate-detection (text embeddings + geo clustering) and
+       delay-detection modules.
+   4.​ Hours 16–22: Wire up the risk-scoring composite, build the FastAPI layer, start
+       frontend dashboard.
+   5.​ Hours 22–30: Finish dashboard (map + investigator queue), integrate end-to-end,
+       inject and verify demo fraud cases fire correctly.
+   6.​ Hours 30–36: Polish, prepare the pitch narrative (lead with the
+       CAG-documented-case validation — "our system flags a real, confirmed case at
+       87/100"), rehearse the demo.
+
+
+
+
+13. Feasibility & Practical Notes
+  ●​ Team composition matters more than the model here. This problem statement
+     needs: 1 person owning data/ETL, 1–2 owning the ML/detection modules, 1–2
+     owning frontend/dashboard, and someone owning the domain narrative (MPLADS
+     rules, CAG cases) for the pitch — the domain-storytelling role is often under-staffed
+     and is exactly what makes judges trust the technical work.
+  ●​ Data access is the biggest real risk, not the modeling — validate that the
+     Dataful/data.gov.in exports actually download cleanly before committing to this
+     problem statement for the final round, since government portals occasionally have
+     uptime/format issues.
+  ●​ Scope discipline: it is very tempting to try to cover all of India, all schemes, all years
+     — for a hackathon, a 2–3 state, single-scheme, multi-year demo that works
+     end-to-end beats a 28-state design that only has mock data behind it.
+
+
+
+
+14. Why This Wins — Pitch Differentiators to
+Emphasize
+  1.​ Domain credibility: cite the CAG's own repeated criticism and the specific
+      mandatory-compliance rules (SC/ST allocation, eligible-use categories) — shows you
+      understood the scheme, not just the buzzwords in the prompt.
+  2.​ Explainability-first scoring — investigators can act on it; a black-box score cannot
+      survive a real audit review.
+  3.​ Validation against real, confirmed fraud cases (from CAG reports) rather than
+      only synthetic data — this is the single strongest "trust us" moment in a demo.
+  4.​ The vendor/agency graph layer — most competing teams will stop at per-project
+      anomaly detection; modeling the execution-side network (District Authority → Agency
+      → Vendor) targets the actual documented fraud mechanism, not just the numbers.
+  5.​ Dual-audience design (public transparency vs. investigator case-management)
+      shows product thinking beyond "we built a model," which is often the gap between a
+      technically strong team and a top-3 finish.
+
+
+
+
+15. Key Risks & Mitigations
+            Risk                                         Mitigation
+
+Public data is                  Scope the primary demo to post-2023 eSAKSHI-era data;
+sparse/inconsistent pre-2023    treat older data as a "historical trend" feature only
+
+False positives damage          Explainable scoring + human-in-the-loop case review +
+system credibility              feedback loop into the model
+
+Judges question "is this real   Lead with the CAG-case validation; be upfront about which
+data or a toy demo"             records are synthetic and why
+Scope creep across all      Hard-scope to MPLADS + 2–3 states for the working
+schemes/states              prototype; describe the generalization path in the pitch,
+                            don't try to build it live
+
+
+
+
+16. Sources Consulted
+  ●​ Ministry of Statistics & Programme Implementation — MPLADS guidelines and
+     eSAKSHI portal (mplads.mospi.gov.in)
+  ●​ PIB press releases on MPLADS sanctioned/completed works and eSAKSHI
+     dashboard revamp
+  ●​ Dataful.in / data.gov.in MPLADS historical datasets (12th–17th Lok Sabha,
+     state/district/constituency/MP-wise)
+  ●​ Drishti IAS and Vision IAS explainer notes on MPLADS mechanics and SC/ST
+     allocation rules
+  ●​ Deccan Herald opinion/reporting on CAG findings and documented misuse patterns
+  ●​ NCA Academy MPLADS timeline (allocation history, 2020–22 suspension)
+

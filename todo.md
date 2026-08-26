@@ -1,6 +1,8 @@
-# MPLAD Sentinel Badge Removal
+# MPLAD Problem-Statement Alignment
 
-- [x] Locate the decorative ACTIVE SCAN badge in the signal stack.
-- [x] Remove the badge without affecting card scrolling, metadata, or photo layering.
-- [x] Validate desktop and mobile evidence-field composition.
-- [ ] Save a new checkpoint and report the change.
+- [x] Extract the exact scheme context, pain points, stakeholders, data sources, anomaly categories, and expected outputs from the supplied brief.
+- [x] Separate documented facts from proposed product behavior and mark demo values clearly.
+- [x] Map the brief into a precise public landing-page information architecture and feature narrative.
+- [x] Revise website copy, diagrams, labels, and imagery to communicate the actual solution.
+- [x] Validate factual wording, responsive states, and production build.
+- [ ] Save a new checkpoint and report the aligned revision.

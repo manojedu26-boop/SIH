@@ -1,0 +1,5 @@
+# Deterministic Evidence Scroll Validation
+
+The opening signal field is now a finite four-step sequence. While the signal stage is in view, downward wheel and touch gestures advance exactly one card at a time: Duplicate Work, Execution Gap, Vendor Outlier, then Geo Mismatch. Events are throttled during each transition so a single gesture cannot skip the next evidence item. At the fourth card, the next downward gesture is not intercepted and the document continues to the following MPLADS content section. Upward gestures reverse one card at a time and release at the first card.
+
+The interaction is attached to the window rather than the carousel element, so cursor position does not determine whether the sequence works. The DepthCarousel retains its visual depth geometry, indicators, arrows, pointer drag, and keyboard navigation; autoplay and looping are disabled for this opening sequence. Reduced-motion users receive the same finite control flow without animated transitions. Type check and production build pass; desktop and mobile previews remain readable.

@@ -32,6 +32,8 @@ type DepthCarouselProps = {
   loop?: boolean;
   showControls?: boolean;
   showIndicators?: boolean;
+  activeIndex?: number;
+  wheelEnabled?: boolean;
   onChange?: (index: number, item: DepthCarouselItem) => void;
 };
 
@@ -57,6 +59,8 @@ export default function DepthCarousel({
   loop = true,
   showControls = true,
   showIndicators = true,
+  activeIndex,
+  wheelEnabled = true,
   onChange,
 }: DepthCarouselProps) {
   const data = useMemo(() => items.filter((item) => item?.image), [items]);
@@ -164,6 +168,16 @@ export default function DepthCarousel({
   }, [cardWidth, layout, spread]);
 
   useEffect(() => {
+    if (activeIndex == null || !data.length) return;
+    if (activeIndex !== focusRef.current) {
+      focusRef.current = activeIndex;
+      tweenTo(activeIndex, true);
+    } else {
+      layout(activeIndex);
+    }
+  }, [activeIndex, data.length, layout, tweenTo]);
+
+  useEffect(() => {
     layout(posRef.current);
     return () => { tweenRef.current?.kill(); };
   }, [layout]);
@@ -193,7 +207,7 @@ export default function DepthCarousel({
 
   useEffect(() => {
     const root = rootRef.current;
-    if (!root) return;
+    if (!root || !wheelEnabled) return;
     const onWheel = (event: WheelEvent) => {
       if (data.length < 2) return;
       event.preventDefault();
@@ -205,7 +219,7 @@ export default function DepthCarousel({
     };
     root.addEventListener('wheel', onWheel, { passive: false });
     return () => root.removeEventListener('wheel', onWheel);
-  }, [cardWidth, data.length, layout, setFocus]);
+  }, [cardWidth, data.length, layout, setFocus, wheelEnabled]);
 
   const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
     if (data.length < 2) return;

@@ -4,7 +4,7 @@ import type { CSSProperties, ReactNode } from 'react';
 import Lenis from 'lenis';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import DepthCarousel from '@/components/DepthCarousel';
-import { ArrowUpRight, ChevronDown, Crosshair, Play, Pause } from 'lucide-react';
+import { ArrowUpRight, ChevronDown, Crosshair } from 'lucide-react';
 
 const signals = [
   { label: 'DUPLICATE WORK', score: '87', color: '#FF5C68', image: '/manus-storage/mplad-project-signals_4d6d81c6.jpg', note: 'Near-identical description found in two districts', meta: 'NASHIK / MH-2024-1187' },
@@ -178,13 +178,74 @@ export const ScrollStack = forwardRef<ScrollStackHandle, ScrollStackProps>(funct
 
 export function Hero7Carousel() {
   const [active, setActive] = useState(0);
-  const [paused, setPaused] = useState(false);
+  const stageRef = useRef<HTMLDivElement>(null);
+  const lockRef = useRef(false);
+  const touchStartRef = useRef<number | null>(null);
+  const itemCount = signals.length;
   const items = signals.map((signal) => ({ ...signal, alt: `${signal.label} evidence image` }));
-  return <div className="hero7-stage hero7-depth-stage" aria-label="MPLADS evidence depth carousel">
+
+  const withinStage = useCallback(() => {
+    const rect = stageRef.current?.getBoundingClientRect();
+    return Boolean(rect && rect.top < window.innerHeight * 0.78 && rect.bottom > window.innerHeight * 0.22);
+  }, []);
+
+  const step = useCallback((direction: 1 | -1) => {
+    if (lockRef.current || !withinStage()) return false;
+    const next = active + direction;
+    if (next < 0 || next >= itemCount) return false;
+    lockRef.current = true;
+    setActive(next);
+    window.setTimeout(() => { lockRef.current = false; }, 650);
+    return true;
+  }, [active, itemCount, withinStage]);
+
+  useEffect(() => {
+    const onWheel = (event: WheelEvent) => {
+      if (!withinStage()) return;
+      const direction: 1 | -1 = event.deltaY > 0 ? 1 : -1;
+      const canStep = direction === 1 ? active < itemCount - 1 : active > 0;
+      if (!canStep) return;
+      event.preventDefault();
+      step(direction);
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (!withinStage()) return;
+      if (event.key === 'ArrowDown' || event.key === 'PageDown') { if (step(1)) event.preventDefault(); }
+      if (event.key === 'ArrowUp' || event.key === 'PageUp') { if (step(-1)) event.preventDefault(); }
+    };
+    const onTouchStart = (event: TouchEvent) => { if (withinStage()) touchStartRef.current = event.touches[0]?.clientY ?? null; };
+    const onTouchMove = (event: TouchEvent) => {
+      const start = touchStartRef.current;
+      if (start == null || !withinStage()) return;
+      const delta = start - (event.touches[0]?.clientY ?? start);
+      if (Math.abs(delta) < 28) return;
+      const direction: 1 | -1 = delta > 0 ? 1 : -1;
+      const canStep = direction === 1 ? active < itemCount - 1 : active > 0;
+      if (!canStep) return;
+      event.preventDefault();
+      step(direction);
+      touchStartRef.current = event.touches[0]?.clientY ?? null;
+    };
+    const onTouchEnd = () => { touchStartRef.current = null; };
+    window.addEventListener('wheel', onWheel, { passive: false });
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('touchstart', onTouchStart, { passive: true });
+    window.addEventListener('touchmove', onTouchMove, { passive: false });
+    window.addEventListener('touchend', onTouchEnd, { passive: true });
+    return () => {
+      window.removeEventListener('wheel', onWheel);
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('touchstart', onTouchStart);
+      window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('touchend', onTouchEnd);
+    };
+  }, [active, itemCount, step, withinStage]);
+
+  return <div className="hero7-stage hero7-depth-stage" ref={stageRef} aria-label="MPLADS evidence sequence: scroll to reveal each signal">
     <div className="hero7-particles" aria-hidden="true">{Array.from({ length: 26 }).map((_, i) => <i key={i} style={{ '--i': i } as CSSProperties} />)}</div>
     <div className="hero7-orbit orbit-a" /><div className="hero7-orbit orbit-b" />
-    <DepthCarousel items={items} cardWidth={300} cardHeight={380} depth={220} spread={90} tilt={22} tiltDirection="right" perspective={1400} visibleCards={4} falloff={0.2} blur={6} autoplay={!paused} autoplayDelay={3200} loop showControls showIndicators onChange={(index) => setActive(index)} />
-    <div className="hero7-caption"><span className="eyebrow">LIVE SIGNAL / {String(active + 1).padStart(2, '0')}</span><strong>{signals[active].note}</strong><button className="icon-button" onClick={() => setPaused((value) => !value)} aria-label={paused ? 'Resume automatic scan' : 'Pause automatic scan'}>{paused ? <Play size={15} /> : <Pause size={15} />}</button></div>
+    <DepthCarousel items={items} activeIndex={active} cardWidth={300} cardHeight={380} depth={220} spread={90} tilt={22} tiltDirection="right" perspective={1400} visibleCards={4} falloff={0.2} blur={6} autoplay={false} loop={false} wheelEnabled={false} showControls showIndicators onChange={(index) => setActive(index)} />
+    <div className="hero7-caption"><span className="eyebrow">SIGNAL {String(active + 1).padStart(2, '0')} / {String(itemCount).padStart(2, '0')}</span><strong>{signals[active].note}</strong><span className="depth-scroll-hint">{active < itemCount - 1 ? 'SCROLL FOR NEXT PHOTO' : 'SCROLL TO CONTINUE'}</span></div>
   </div>;
 }
 

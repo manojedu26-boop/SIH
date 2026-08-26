@@ -57,3 +57,12 @@
 
 /* Civic Signal Atlas — the photo rail is a finite reading sequence, not an infinite carousel. */
 .hero7-depth-stage .hero7-caption{align-items:center}.depth-scroll-hint{margin-left:auto;color:var(--muted-ice);font:600 .58rem 'Space Grotesk';letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}.hero7-depth-stage .depth-carousel__indicators button{cursor:pointer}.hero7-depth-stage .depth-carousel__controls button{cursor:pointer}@media (max-width:900px){.depth-scroll-hint{font-size:.5rem}}@media (max-width:520px){.hero7-depth-stage .hero7-caption{gap:.5rem;align-items:flex-start}.depth-scroll-hint{margin-left:0;font-size:.46rem}}
+
+/* Civic Signal Atlas — compact finite signal sequence: the panel grows only to hold the cards, caption, and controls. */
+@media (max-width:900px){.hero7-panel{height:640px;min-height:640px}.hero7-depth-stage{height:100%;min-height:0}.hero7-depth-stage .depth-carousel{inset:0 0 2.6rem}.hero7-depth-stage .hero7-caption{bottom:.25rem}}
+@media (max-width:520px){.hero7-panel{height:620px;min-height:620px;padding-bottom:.35rem}.hero7-depth-stage{height:100%;min-height:0}.hero7-depth-stage .depth-carousel{inset:0 0 2.2rem}.hero7-depth-stage .hero7-caption{bottom:0}}
+
+/* Civic Signal Atlas — final compact rail geometry: no tall spacer around the evidence card. */
+.depth-carousel__card{top:48%}
+@media (max-width:900px){.hero7-panel{height:600px;min-height:600px}.hero7-depth-stage{height:100%;min-height:0}}
+@media (max-width:520px){.hero7-panel{height:540px;min-height:540px}.hero7-depth-stage{height:100%;min-height:0}.depth-carousel__card{top:48%}}

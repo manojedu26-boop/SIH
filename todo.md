@@ -1,9 +1,7 @@
-# MPLAD Sentinel Deterministic Scroll Sequence
+# MPLAD Sentinel Carousel Whitespace Reduction
 
-- [x] Remove autoplay and looping from the opening evidence field.
-- [x] Make page scroll own the sequence regardless of cursor position.
-- [x] Reveal the four evidence photos one-by-one on downward scroll.
-- [x] Hold the page until the final photo has been shown, then release to the next section.
-- [x] Support reverse scrolling, touch gestures, keyboard controls, and reduced-motion behavior.
-- [x] Validate the sequence and production build.
-- [ ] Save a new checkpoint and report the fix.
+- [x] Inspect the opening carousel stage height, card top position, and mobile scaling rules.
+- [x] Reduce empty space above and below the evidence cards.
+- [x] Keep the finite one-photo-per-scroll sequence and next-section handoff intact.
+- [x] Validate compact desktop and mobile layouts plus production build.
+- [ ] Save a new checkpoint and report the change.

@@ -1,8 +1,7 @@
-# MPLAD Sentinel DepthCarousel Replacement
+# MPLAD Sentinel New Attachment Integration
 
-- [x] Confirm the supplied DepthCarousel props and the current image-field mount point.
-- [x] Add a reusable GSAP DepthCarousel with depth, spread, tilt, perspective, falloff, blur, autoplay, and loop behavior.
-- [x] Replace the previous page-scroll-linked image effect with the DepthCarousel using existing MPLADS evidence images.
-- [x] Preserve metadata, pause/resume, controls, indicators, pointer drag, keyboard navigation, and reduced-motion support.
-- [x] Validate desktop and mobile carousel states and run the production build.
-- [ ] Save a new checkpoint and report the replacement.
+- [x] Read and classify `pasted_content_11.txt`.
+- [x] Map its intended component or interaction to the current MPLAD Sentinel architecture.
+- [x] Integrate it while preserving accurate MPLADS content and the supplied DepthCarousel.
+- [x] Validate desktop/mobile behavior, interaction states, and production build.
+- [ ] Save a new checkpoint and report the integration.

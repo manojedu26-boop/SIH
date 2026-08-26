@@ -203,7 +203,6 @@ export function Hero7Carousel() {
           </ScrollStackItem>
         ))}
       </ScrollStack>
-      <div className="hero7-core" aria-hidden="true"><img src="/manus-storage/mplad-sentinel-mark_5650636e.png" alt="" /><span>ACTIVE<br/>SCAN</span></div>
       <div className="hero7-caption"><span className="eyebrow">LIVE SIGNAL / {String(active + 1).padStart(2, '0')}</span><strong>{signals[active].note}</strong><button className="icon-button" onClick={() => setPaused((value) => !value)} aria-label={paused ? 'Resume automatic scan' : 'Pause automatic scan'}>{paused ? <Play size={15} /> : <Pause size={15} />}</button></div>
     </div>
   );

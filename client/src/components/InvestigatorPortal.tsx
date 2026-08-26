@@ -718,7 +718,7 @@ export default function InvestigatorPortal({ onClose }: InvestigatorPortalProps)
 
                 {/* Scoped Jurisdiction Map Widget */}
                 <div className="portal-map">
-                  <img src="/manus-storage/mplad-district-texture_d6fee9ee.jpg" alt="Jurisdiction map texture" />
+                  <img src="/images/mplad-district-texture.jpg" alt="Jurisdiction map texture" />
                   <i className="portal-map-spot spot-one" />
                   <i className="portal-map-spot spot-two" />
                   <div className="portal-map-label">BENGALURU SOUTH / JURISDICTION MAP</div>

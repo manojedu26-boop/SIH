@@ -7,10 +7,10 @@ import DepthCarousel from '@/components/DepthCarousel';
 import { ArrowUpRight, ChevronDown, Crosshair } from 'lucide-react';
 
 const signals = [
-  { label: 'DUPLICATE WORK', score: '87', color: '#FF5C68', image: '/manus-storage/mplad-project-signals_4d6d81c6.jpg', note: 'Near-identical description found in two districts', meta: 'NASHIK / MH-2024-1187' },
-  { label: 'EXECUTION GAP', score: '76', color: '#FF2DAA', image: '/manus-storage/mplad-investigation_3b4bbb25.jpg', note: '95% funds used · 0% physical completion', meta: 'KOTA / RJ-2024-0412' },
-  { label: 'VENDOR OUTLIER', score: '63', color: '#B9D7E9', image: '/manus-storage/mplad-hero-field_5e7eeedd.jpg', note: 'Contractor footprint exceeds regional baseline', meta: 'MYSURU / KA-2023-0920' },
-  { label: 'GEO MISMATCH', score: '58', color: '#FF8C9A', image: '/manus-storage/mplad-district-texture_d6fee9ee.jpg', note: 'Project coordinates fall outside the reported district', meta: 'SATARA / MH-2024-0763' },
+  { label: 'DUPLICATE WORK', score: '87', color: '#FF5C68', image: '/images/mplad-project-signals.jpg', note: 'Near-identical description found in two districts', meta: 'NASHIK / MH-2024-1187' },
+  { label: 'EXECUTION GAP', score: '76', color: '#FF2DAA', image: '/images/mplad-investigation.jpg', note: '95% funds used · 0% physical completion', meta: 'KOTA / RJ-2024-0412' },
+  { label: 'VENDOR OUTLIER', score: '63', color: '#B9D7E9', image: '/images/mplad-hero-field.jpg', note: 'Contractor footprint exceeds regional baseline', meta: 'MYSURU / KA-2023-0920' },
+  { label: 'GEO MISMATCH', score: '58', color: '#FF8C9A', image: '/images/mplad-district-texture.jpg', note: 'Project coordinates fall outside the reported district', meta: 'SATARA / MH-2024-0763' },
 ];
 
 type ScrollStackProps = {
@@ -253,7 +253,7 @@ export function Hero9Reveal() {
   const [active, setActive] = useState(false);
   useEffect(() => { const id = window.requestAnimationFrame(() => setActive(true)); return () => window.cancelAnimationFrame(id); }, []);
   return <section className="hero9-reveal" id="signal-map">
-    <img src="/manus-storage/mplad-hero-field_5e7eeedd.jpg" alt="Abstract district signal map" />
+    <img src="/images/mplad-hero-field.jpg" alt="Abstract district signal map" />
     <div className="hero9-scanline" />
     <div className="hero9-copy"><span className="eyebrow">MPLAD SENTINEL / 01</span><h2 className={active ? 'is-revealed' : ''}>Turn public records<br /><em>into review signals.</em></h2><p>A proposed intelligence layer for MPLADS: compare recommendations, sanctions, payments, completion, and agency patterns to show investigators what needs verification.</p><div className="hero-actions"><a href="#signals" className="button-coral cursor-target">Open the signal field <ArrowUpRight size={16} /></a><a href="#how-it-works" className="text-link cursor-target">How detection works <ArrowUpRight size={16} /></a></div></div>
     <motion.div className="hero-console" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: .45, duration: .6 }}><div><span className="console-dot" /> SYSTEM ONLINE</div><strong>03,842</strong><small>RECORDS IN REVIEW</small><div className="console-divider" /><strong>04</strong><small>SIGNAL CLASSES</small></motion.div>

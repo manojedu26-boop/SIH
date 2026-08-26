@@ -1,8 +1,8 @@
-# MPLAD Sentinel GitHub Sync and Mobile Pass
+# MPLAD Sentinel Multi-Photo Signal Stack
 
-- [x] Inspect the provided GitHub repository and confirm its branch and access state.
-- [x] Audit mobile behavior for hero layout, overflow, typography, controls, and tap targets.
-- [x] Implement the mobile optimization pass without diluting the Civic Signal Atlas design.
-- [x] Validate 390px and 768px responsive states plus the production build.
-- [x] Commit and push the finished code to the provided GitHub repository.
-- [ ] Save a checkpoint and report the sync result.
+- [x] Inspect the current Hero 7-style signal-field implementation and asset URLs.
+- [x] Add distinct evidence photos and project metadata to the signal stack.
+- [x] Replace the single-image rotation with a scroll-driven ScrollStack-style depth interaction.
+- [x] Refine the stack for mobile touch scrolling, legibility, and safe viewport composition.
+- [x] Validate the revised desktop and mobile signal field and run the production build.
+- [ ] Save a new checkpoint and report the revision.

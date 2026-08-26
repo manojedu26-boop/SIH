@@ -1,7 +1,7 @@
-# MPLAD Sentinel Carousel Whitespace Reduction
+# MPLAD Sentinel GitHub Synchronization
 
-- [x] Inspect the opening carousel stage height, card top position, and mobile scaling rules.
-- [x] Reduce empty space above and below the evidence cards.
-- [x] Keep the finite one-photo-per-scroll sequence and next-section handoff intact.
-- [x] Validate compact desktop and mobile layouts plus production build.
-- [ ] Save a new checkpoint and report the change.
+- [ ] Inspect the local branch, status, remote, and authenticated GitHub account.
+- [ ] Commit all current project changes, including the carousel and mobile fixes.
+- [ ] Push the complete project to `manojedu26-boop/SIH` on `main`.
+- [ ] Verify the remote commit and top-level repository contents.
+- [ ] Report the synchronized repository and commit.

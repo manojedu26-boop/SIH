@@ -1,8 +1,10 @@
-# MPLAD Problem-Statement Alignment
+# MPLAD Sentinel Visual Content Refinement
 
-- [x] Extract the exact scheme context, pain points, stakeholders, data sources, anomaly categories, and expected outputs from the supplied brief.
-- [x] Separate documented facts from proposed product behavior and mark demo values clearly.
-- [x] Map the brief into a precise public landing-page information architecture and feature narrative.
-- [x] Revise website copy, diagrams, labels, and imagery to communicate the actual solution.
-- [x] Validate factual wording, responsive states, and production build.
-- [ ] Save a new checkpoint and report the aligned revision.
+- [x] Use SplitFlapText for compact system-status and source labels where mechanical data-board motion reinforces the product.
+- [x] Use FoldText for major section headlines so long content unfolds into visual reading beats.
+- [x] Use Shuffle or ScrambledText selectively for hover/scroll microcopy, avoiding motion on dense body text.
+- [x] Use RotatingText for one concise changing phrase that communicates the four detection classes.
+- [x] Use CountUp for factual/proposed metrics only where the value is clearly labeled and not misleading.
+- [x] Restructure the homepage into shorter, more attractive content moments with progressive disclosure.
+- [x] Validate accessibility, mobile readability, reduced-motion behavior, and production build.
+- [ ] Save a new checkpoint and report the visual content refinement.

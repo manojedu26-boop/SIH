@@ -1,6 +1,7 @@
-/* Civic Signal Atlas: 3-tier role-gated investigator portal with government domain validation, MFA, onboarding, scoped dashboard & field evidence tools. */
+/* Civic Signal Atlas: 3-tier role-gated investigator portal with domain validation, MFA, onboarding, scoped dashboard & field evidence tools for SIH26102 MPLADS. */
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import {
+  AlertOctagon,
   AlertTriangle,
   ArrowRight,
   BadgeCheck,
@@ -16,6 +17,8 @@ import {
   Flame,
   HelpCircle,
   History,
+  Info,
+  KeyRound,
   Layers,
   LockKeyhole,
   LogOut,
@@ -27,8 +30,11 @@ import {
   ShieldAlert,
   ShieldCheck,
   SlidersHorizontal,
+  Smartphone,
   UserCheck,
   UserCog,
+  Wifi,
+  WifiOff,
   X
 } from 'lucide-react';
 
@@ -68,6 +74,18 @@ const initialDemoQueue: QueueItem[] = [
     breakdown: { financial: 28, duplicate: 25, delay: 18, compliance: 10, graph: 6 }
   },
   {
+    id: 'KA-2023-0920',
+    title: 'High School Sanitation Facility Block Construction',
+    place: 'Bengaluru South / Karnataka',
+    cost: '₹18.2 Lakhs',
+    score: 84,
+    reason: 'Contractor agency network controls 78% of district sanction allocations across 3 MPs.',
+    category: 'Agency graph',
+    status: 'New',
+    lastUpdated: '4 hours ago',
+    breakdown: { financial: 24, duplicate: 15, delay: 15, compliance: 20, graph: 10 }
+  },
+  {
     id: 'RJ-2024-0412',
     title: 'Rural Connective Road Improvement (KM 4 to 9)',
     place: 'Kota / Rajasthan',
@@ -78,18 +96,6 @@ const initialDemoQueue: QueueItem[] = [
     status: 'Under review',
     lastUpdated: '2 hours ago',
     breakdown: { financial: 30, duplicate: 10, delay: 20, compliance: 10, graph: 6 }
-  },
-  {
-    id: 'KA-2023-0920',
-    title: 'High School Sanitation Facility Block',
-    place: 'Bengaluru South / Karnataka',
-    cost: '₹18.2 Lakhs',
-    score: 84,
-    reason: 'Contractor agency network controls 78% of district sanction allocations across 3 MPs.',
-    category: 'Agency graph',
-    status: 'New',
-    lastUpdated: '4 hours ago',
-    breakdown: { financial: 24, duplicate: 15, delay: 15, compliance: 20, graph: 10 }
   },
   {
     id: 'UP-2024-3310',
@@ -118,8 +124,8 @@ const initialDemoQueue: QueueItem[] = [
 ];
 
 const initialAuditTrail = [
-  { id: 'LOG-109', time: '19:14', actor: 'S. Ramesh (Reviewer)', action: 'MFA 2-Factor OTP verified via SMS' },
-  { id: 'LOG-108', time: '19:10', actor: 'System Sentinel', action: 'Jurisdiction scoped to Karnataka / Bengaluru South' },
+  { id: 'LOG-109', time: '19:14', actor: 'S. Ramesh (Reviewer)', action: 'MFA 2-Factor OTP verified via SMS (+91 98765 49021)' },
+  { id: 'LOG-108', time: '19:10', actor: 'System Sentinel', action: 'Jurisdiction scoped to Karnataka / Bengaluru South (PC-26)' },
   { id: 'LOG-107', time: '18:45', actor: 'A. Gupta (MoSPI Admin)', action: 'Provisioned new auditor identity GOV-KA-8831' }
 ];
 
@@ -133,6 +139,21 @@ export default function InvestigatorPortal({ onClose }: InvestigatorPortalProps)
   const [otp, setOtp] = useState('');
   const [showMfa, setShowMfa] = useState(false);
   const [mfaTimer, setMfaTimer] = useState(30);
+  const [otpAttemptsLeft, setOtpAttemptsLeft] = useState(3);
+  const [accountLocked, setAccountLocked] = useState(false);
+  const [domainError, setDomainError] = useState(false);
+
+  // Security & Password Reset Modals
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotOtp, setForgotOtp] = useState('');
+  const [forgotMfaSent, setForgotMfaSent] = useState(false);
+  const [resetSuccess, setResetSuccess] = useState(false);
+
+  // Step-Up Authentication Modal for High-Stakes Status (e.g. "Confirmed Fraud")
+  const [pendingFraudCaseId, setPendingFraudCaseId] = useState<string | null>(null);
+  const [stepUpPassword, setStepUpPassword] = useState('');
+  const [stepUpError, setStepUpError] = useState('');
 
   // User Role & Tier
   const [userRole, setUserRole] = useState<'District Reviewer' | 'MoSPI Auditor' | 'System Admin'>('District Reviewer');
@@ -140,6 +161,10 @@ export default function InvestigatorPortal({ onClose }: InvestigatorPortalProps)
   // Onboarding Modal State
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState(1);
+
+  // Mobile & Low Bandwidth Modes
+  const [lowBandwidthMode, setLowBandwidthMode] = useState(false);
+  const [biometricEnabled, setBiometricEnabled] = useState(true);
 
   // Queue & Data States
   const [queue, setQueue] = useState<QueueItem[]>(initialDemoQueue);
@@ -154,17 +179,25 @@ export default function InvestigatorPortal({ onClose }: InvestigatorPortalProps)
 
   // Field Verification Attachment Simulation State
   const [fieldPhotos, setFieldPhotos] = useState<Array<{ name: string; timestamp: string; location: string }>>([
-    { name: 'site_inspection_01.jpg', timestamp: '26-08-2026 14:20 IST', location: '12.9716° N, 77.5946° E (Bengaluru South)' }
+    { name: 'site_inspection_01.jpg', timestamp: '27-08-2026 14:20 IST', location: '12.9716° N, 77.5946° E (Bengaluru South)' }
   ]);
   const [uploadSuccess, setUploadSuccess] = useState(false);
 
-  // Countdown timer simulation for session timeout (15 mins)
+  // Countdown timer simulation for session timeout (15 mins = 900 seconds)
   const [sessionSeconds, setSessionSeconds] = useState(900);
 
   useEffect(() => {
     if (!signedIn) return;
     const timer = setInterval(() => {
-      setSessionSeconds((prev) => (prev > 0 ? prev - 1 : 0));
+      setSessionSeconds((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          setSignedIn(false);
+          setShowMfa(false);
+          return 0;
+        }
+        return prev - 1;
+      });
     }, 1000);
     return () => clearInterval(timer);
   }, [signedIn]);
@@ -182,10 +215,39 @@ export default function InvestigatorPortal({ onClose }: InvestigatorPortalProps)
     return `${m}:${s < 10 ? '0' : ''}${s}`;
   }, [sessionSeconds]);
 
-  // Domain validation check
+  // Domain validation check - robust handling for trailing whitespace & case-sensitivity
   const isGovDomain = useMemo(() => {
-    return email.endsWith('.gov.in') || email.endsWith('.nic.in') || email.endsWith('@mospi.gov.in');
+    const clean = email.trim().toLowerCase();
+    if (!clean.includes('@')) return false;
+    return (
+      clean.endsWith('.gov.in') ||
+      clean.endsWith('.nic.in') ||
+      clean.endsWith('gov.in') ||
+      clean.endsWith('nic.in') ||
+      clean.endsWith('@mospi.gov.in') ||
+      clean.includes('@nic.in') ||
+      clean.includes('@gov.in')
+    );
   }, [email]);
+
+  const handleEmailChange = (val: string) => {
+    setEmail(val);
+    const clean = val.trim().toLowerCase();
+    if (
+      clean.length > 4 &&
+      !clean.endsWith('.gov.in') &&
+      !clean.endsWith('.nic.in') &&
+      !clean.endsWith('gov.in') &&
+      !clean.endsWith('nic.in') &&
+      !clean.endsWith('@mospi.gov.in') &&
+      !clean.includes('@nic.in') &&
+      !clean.includes('@gov.in')
+    ) {
+      setDomainError(true);
+    } else {
+      setDomainError(false);
+    }
+  };
 
   const filteredQueue = useMemo(() => {
     return queue.filter((item) => {
@@ -200,24 +262,54 @@ export default function InvestigatorPortal({ onClose }: InvestigatorPortalProps)
     return queue.find((c) => c.id === selectedCaseId) || queue[0];
   }, [queue, selectedCaseId]);
 
-  const handleLogin = (event: FormEvent) => {
-    event.preventDefault();
-    if (!isGovDomain) return;
+  const handleLogin = (e: FormEvent) => {
+    e.preventDefault();
+    if (!isGovDomain) {
+      setDomainError(true);
+      return;
+    }
+    if (accountLocked) return;
+
     if (!showMfa) {
       setShowMfa(true);
       setMfaTimer(30);
       return;
     }
+
+    // Check OTP validation
+    if (otp !== '849201' && otp.length !== 6) {
+      const remaining = otpAttemptsLeft - 1;
+      setOtpAttemptsLeft(remaining);
+      if (remaining <= 0) {
+        setAccountLocked(true);
+        setAuditLog((prev) => [
+          { id: `LOG-${Date.now().toString().slice(-3)}`, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), actor: email, action: 'SECURITY ALERT: Account locked after 3 failed OTP attempts' },
+          ...prev
+        ]);
+      }
+      return;
+    }
+
     setSignedIn(true);
     setShowOnboarding(true); // Trigger first-time orientation after login
-    // Add login log
     setAuditLog((prev) => [
-      { id: `LOG-${Date.now().toString().slice(-3)}`, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), actor: `${email} (${userRole})`, action: 'MFA 2-Factor OTP verified' },
+      { id: `LOG-${Date.now().toString().slice(-3)}`, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), actor: `${email} (${userRole})`, action: 'MFA 2-Factor OTP verified via SMS (+91 98765 49021)' },
       ...prev
     ]);
   };
 
-  const handleStatusChange = (caseId: string, newStatus: CaseStatus) => {
+  const handleStatusChangeRequest = (caseId: string, newStatus: CaseStatus) => {
+    if (newStatus === 'Confirmed Fraud') {
+      // High-stakes status change requires Step-Up Re-Authentication!
+      setPendingFraudCaseId(caseId);
+      setStepUpPassword('');
+      setStepUpError('');
+      return;
+    }
+    applyStatusChange(caseId, newStatus);
+  };
+
+  const applyStatusChange = (caseId: string, newStatus: CaseStatus) => {
     setQueue((prev) =>
       prev.map((item) => (item.id === caseId ? { ...item, status: newStatus, lastUpdated: 'Just now' } : item))
     );
@@ -225,11 +317,23 @@ export default function InvestigatorPortal({ onClose }: InvestigatorPortalProps)
       {
         id: `LOG-${Date.now().toString().slice(-3)}`,
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        actor: 'S. Ramesh (Reviewer)',
+        actor: `${userRole} (${email})`,
         action: `Case ${caseId} status updated to [${newStatus}]`
       },
       ...prev
     ]);
+  };
+
+  const confirmStepUpAuth = (e: FormEvent) => {
+    e.preventDefault();
+    if (!stepUpPassword || stepUpPassword.length < 4) {
+      setStepUpError('Password required for high-stakes fraud declaration step-up re-authentication.');
+      return;
+    }
+    if (pendingFraudCaseId) {
+      applyStatusChange(pendingFraudCaseId, 'Confirmed Fraud');
+      setPendingFraudCaseId(null);
+    }
   };
 
   const handleSimulatedPhotoUpload = () => {
@@ -253,6 +357,20 @@ export default function InvestigatorPortal({ onClose }: InvestigatorPortalProps)
     ]);
   };
 
+  const handleForgotPasswordSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    if (!forgotMfaSent) {
+      setForgotMfaSent(true);
+    } else {
+      setResetSuccess(true);
+      setTimeout(() => {
+        setShowForgotPassword(false);
+        setForgotMfaSent(false);
+        setResetSuccess(false);
+      }, 2500);
+    }
+  };
+
   return (
     <div className="portal-backdrop" role="dialog" aria-modal="true" aria-labelledby="portal-title">
       <section className="investigator-portal">
@@ -264,21 +382,30 @@ export default function InvestigatorPortal({ onClose }: InvestigatorPortalProps)
             </span>
             <div>
               <span className="eyebrow">SIH26102 / RESTRICTED AUDIT PORTAL</span>
-              <strong id="portal-title">MPLAD Sentinel Investigator</strong>
+              <strong id="portal-title">MPLAD Sentinel Investigator Engine</strong>
             </div>
           </div>
           <div className="portal-header-actions">
             {signedIn && (
-              <button
-                className="portal-onboarding-trigger cursor-target"
-                onClick={() => {
-                  setOnboardingStep(1);
-                  setShowOnboarding(true);
-                }}
-                title="View onboarding guide"
-              >
-                <HelpCircle size={15} /> Guide
-              </button>
+              <>
+                <button
+                  className={`portal-onboarding-trigger cursor-target ${lowBandwidthMode ? 'active' : ''}`}
+                  onClick={() => setLowBandwidthMode(!lowBandwidthMode)}
+                  title="Toggle low-bandwidth mode for rural field officers"
+                >
+                  {lowBandwidthMode ? <WifiOff size={14} /> : <Wifi size={14} />} {lowBandwidthMode ? 'Low Bandwidth' : 'Standard Bandwidth'}
+                </button>
+                <button
+                  className="portal-onboarding-trigger cursor-target"
+                  onClick={() => {
+                    setOnboardingStep(1);
+                    setShowOnboarding(true);
+                  }}
+                  title="View onboarding guide"
+                >
+                  <HelpCircle size={15} /> Orientation Guide
+                </button>
+              </>
             )}
             <button className="portal-close cursor-target" onClick={onClose} aria-label="Close investigator portal">
               Close ×
@@ -404,6 +531,124 @@ export default function InvestigatorPortal({ onClose }: InvestigatorPortalProps)
           </div>
         )}
 
+        {/* Step-Up Authentication Modal for High-Stakes Fraud Declaration */}
+        {pendingFraudCaseId && (
+          <div className="onboarding-overlay">
+            <div className="onboarding-card step-up-card">
+              <div className="onboarding-header">
+                <span className="eyebrow">STEP-UP RE-AUTHENTICATION MANDATORY</span>
+                <button onClick={() => setPendingFraudCaseId(null)} className="onboarding-close">
+                  <X size={16} />
+                </button>
+              </div>
+
+              <form onSubmit={confirmStepUpAuth} className="step-up-form">
+                <div className="step-up-icon">
+                  <ShieldAlert size={32} color="var(--coral)" />
+                </div>
+                <h3>Confirm High-Stakes Fraud Flag</h3>
+                <p>
+                  Declaring case <strong>{pendingFraudCaseId}</strong> as <em>"Confirmed Fraud"</em> generates a statutory escalation log for CAG / MoSPI investigation.
+                  Re-enter your password to authorize this action.
+                </p>
+
+                <label className="step-up-label">
+                  Re-Enter Password / Passcode
+                  <input
+                    type="password"
+                    value={stepUpPassword}
+                    onChange={(e) => setStepUpPassword(e.target.value)}
+                    placeholder="Enter account password"
+                    autoFocus
+                    required
+                  />
+                </label>
+
+                {stepUpError && <p className="step-up-error">{stepUpError}</p>}
+
+                <div className="step-up-actions">
+                  <button
+                    type="button"
+                    className="portal-secondary-btn cursor-target"
+                    onClick={() => setPendingFraudCaseId(null)}
+                  >
+                    Cancel
+                  </button>
+                  <button type="submit" className="button-coral cursor-target">
+                    Authorize Fraud Flag <ShieldCheck size={16} />
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Forgot Password Modal */}
+        {showForgotPassword && (
+          <div className="onboarding-overlay">
+            <div className="onboarding-card">
+              <div className="onboarding-header">
+                <span className="eyebrow">PASSWORD RESET VIA MANDATORY OTP</span>
+                <button onClick={() => setShowForgotPassword(false)} className="onboarding-close">
+                  <X size={16} />
+                </button>
+              </div>
+
+              <form onSubmit={handleForgotPasswordSubmit} className="onboarding-body">
+                <h3>Forgot Password Recovery</h3>
+                <p>Password reset requires 2-factor OTP verification to prevent unauthorized account access.</p>
+
+                {resetSuccess ? (
+                  <div className="mfa-step-container">
+                    <CheckCircle2 size={32} color="var(--coral)" />
+                    <p>Password reset link sent to official email! Follow instructions in message.</p>
+                  </div>
+                ) : (
+                  <>
+                    <label>
+                      Official @gov.in / @nic.in Email
+                      <input
+                        type="email"
+                        value={forgotEmail || email}
+                        onChange={(e) => setForgotEmail(e.target.value)}
+                        placeholder="s.ramesh@nic.in"
+                        required
+                      />
+                    </label>
+
+                    {forgotMfaSent && (
+                      <label>
+                        Enter 6-Digit Verification OTP
+                        <input
+                          inputMode="numeric"
+                          value={forgotOtp}
+                          onChange={(e) => setForgotOtp(e.target.value)}
+                          placeholder="e.g. 849201"
+                          maxLength={6}
+                          required
+                        />
+                      </label>
+                    )}
+
+                    <div className="onboarding-footer" style={{ marginTop: '1.5rem', padding: 0 }}>
+                      <button
+                        type="button"
+                        className="text-link cursor-target"
+                        onClick={() => setShowForgotPassword(false)}
+                      >
+                        Cancel
+                      </button>
+                      <button type="submit" className="button-coral cursor-target">
+                        {forgotMfaSent ? 'Verify OTP & Send Reset Link' : 'Send Verification OTP'}
+                      </button>
+                    </div>
+                  </>
+                )}
+              </form>
+            </div>
+          </div>
+        )}
+
         {/* State A: Unauthenticated Login / Provisioning Flow */}
         {!signedIn ? (
           <div className="portal-login-layout">
@@ -419,26 +664,52 @@ export default function InvestigatorPortal({ onClose }: InvestigatorPortalProps)
 
               <div className="portal-tier-badge">
                 <UserCog size={16} />
-                <span>Selected Tier: <strong>Investigator / Auditor (Tier 2)</strong></span>
+                <span>Selected Privilege Tier: <strong>{userRole} (Tier 2/3)</strong></span>
               </div>
 
               <div className="portal-trust">
                 <LockKeyhole size={17} />
-                <span>RESTRICTED AUDIT SYSTEM. All login attempts and data queries are recorded in an append-only audit trail.</span>
+                <span>RESTRICTED AUDIT SYSTEM. All login attempts, failed attempts, and data queries are recorded in an append-only audit trail.</span>
               </div>
 
               <div className="portal-demo-creds">
-                <span className="eyebrow">DEMO CREDENTIAL PROVISIONING</span>
+                <span className="eyebrow">DEMO PROVISIONED IDENTITY</span>
                 <p>Official Email: <code>s.ramesh@nic.in</code></p>
-                <p>Role: <code>District Reviewer (Bengaluru South)</code></p>
+                <p>Role: <code>District Reviewer (Bengaluru South PC-26)</code></p>
+                <p>MFA Target: <code>SMS to +91 ••••••9021 / TOTP Authenticator</code></p>
+              </div>
+
+              {/* SSO Placeholder Mention */}
+              <div className="sso-placeholder-box">
+                <BadgeCheck size={16} color="var(--ice)" />
+                <span>Production Mode: Integrates with <strong>Parichay / Digital India Government SSO</strong></span>
               </div>
             </div>
 
             <form className="portal-login-form" onSubmit={handleLogin}>
               <div className="form-header">
                 <h3>Investigator Authentication</h3>
-                <small>Enter your provisioned @gov.in / @nic.in email</small>
+                <small>Enter your provisioned @gov.in / @nic.in official email</small>
               </div>
+
+              {/* Account Locked Alert */}
+              {accountLocked && (
+                <div className="alert-locked-box">
+                  <AlertOctagon size={20} color="var(--coral)" />
+                  <div>
+                    <strong>ACCOUNT TEMPORARILY LOCKED</strong>
+                    <p>3 failed OTP attempts detected. System Administrator notified of credential-stuffing attempt.</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Invalid Domain Alert */}
+              {domainError && (
+                <div className="alert-domain-box">
+                  <AlertTriangle size={18} color="var(--coral)" />
+                  <span>Access Restricted: Only verified <strong>@gov.in</strong> / <strong>@nic.in</strong> / <strong>@mospi.gov.in</strong> email domains permitted.</span>
+                </div>
+              )}
 
               <label>
                 Official Email Domain
@@ -446,19 +717,11 @@ export default function InvestigatorPortal({ onClose }: InvestigatorPortalProps)
                   <input
                     type="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => handleEmailChange(e.target.value)}
                     placeholder="name@district.gov.in"
                     required
                   />
-                  {isGovDomain ? (
-                    <span className="domain-status verified">
-                      <BadgeCheck size={14} /> Validated Domain
-                    </span>
-                  ) : (
-                    <span className="domain-status invalid">
-                      <AlertTriangle size={14} /> Requires @gov.in / @nic.in
-                    </span>
-                  )}
+                  {isGovDomain && <span className="domain-valid-check"><CheckCircle2 size={16} color="var(--coral)" /> Verified Domain</span>}
                 </div>
               </label>
 
@@ -474,15 +737,15 @@ export default function InvestigatorPortal({ onClose }: InvestigatorPortalProps)
               </label>
 
               <label>
-                Assigned Role / Privilege
+                Assigned Role / Privilege Scope
                 <select
                   value={userRole}
                   onChange={(e) => setUserRole(e.target.value as any)}
                   className="role-select"
                 >
-                  <option value="District Reviewer">District Reviewer (Read / Case Action)</option>
-                  <option value="MoSPI Auditor">MoSPI Auditor (Statewide Review)</option>
-                  <option value="System Admin">System Admin (Full Provisioning)</option>
+                  <option value="District Reviewer">District Reviewer (Read / Case Action / Field Evidence)</option>
+                  <option value="MoSPI Auditor">MoSPI Auditor (Statewide / National Audit Review)</option>
+                  <option value="System Admin">System Admin (Full Provisioning & Audit Log Management)</option>
                 </select>
               </label>
 
@@ -508,6 +771,18 @@ export default function InvestigatorPortal({ onClose }: InvestigatorPortalProps)
                     />
                   </label>
 
+                  {/* Demo OTP Quick Autofill Button */}
+                  <div className="mfa-autofill-bar">
+                    <button
+                      type="button"
+                      className="demo-autofill-btn cursor-target"
+                      onClick={() => setOtp('849201')}
+                    >
+                      <Smartphone size={13} /> Auto-fill Demo OTP (849201)
+                    </button>
+                    <small className="attempts-text">{otpAttemptsLeft} attempts remaining</small>
+                  </div>
+
                   <div className="mfa-timer-row">
                     <span>
                       <Clock size={13} /> Resend OTP in {mfaTimer}s
@@ -524,22 +799,41 @@ export default function InvestigatorPortal({ onClose }: InvestigatorPortalProps)
                 </div>
               )}
 
-              <button className="button-coral portal-submit cursor-target" type="submit" disabled={!isGovDomain}>
+              {/* CAPTCHA & Security Badge */}
+              <div className="captcha-badge-row">
+                <div className="captcha-box">
+                  <CheckCircle2 size={15} color="var(--coral)" />
+                  <span>reCAPTCHA v3 Enterprise Passed</span>
+                </div>
+                <button
+                  type="button"
+                  className="forgot-pass-link cursor-target"
+                  onClick={() => setShowForgotPassword(true)}
+                >
+                  Forgot Password?
+                </button>
+              </div>
+
+              <button
+                className="button-coral portal-submit cursor-target"
+                type="submit"
+                disabled={!isGovDomain || accountLocked}
+              >
                 {showMfa ? 'Verify OTP & Access Dashboard' : 'Continue to Mandatory MFA'}
                 <ChevronRight size={16} />
               </button>
 
               <div className="security-check-footer">
                 <span>
-                  <ShieldCheck size={13} /> reCAPTCHA Enterprise & RBAC Secured
+                  <ShieldCheck size={13} /> RBAC & TLS 1.3 Secured
                 </span>
-                <span>Audit Log: Active</span>
+                <span>Audit Trail: Active</span>
               </div>
             </form>
           </div>
         ) : (
           /* State B: Authenticated Post-Login Investigator Dashboard */
-          <div className="portal-dashboard">
+          <div className={`portal-dashboard ${lowBandwidthMode ? 'low-bandwidth' : ''}`}>
             {/* Scoped Identity Header */}
             <div className="portal-scope">
               <div>
@@ -548,7 +842,7 @@ export default function InvestigatorPortal({ onClose }: InvestigatorPortalProps)
                   Bengaluru South <em>review queue.</em>
                 </h2>
                 <p>
-                  Jurisdiction Scope: Karnataka · Bengaluru South constituency · Inspector: S. Ramesh (GOV-KA-8831)
+                  Jurisdiction Scope: Karnataka · Bengaluru South constituency (PC-26) · Officer: S. Ramesh (GOV-KA-8831)
                 </p>
               </div>
 
@@ -556,7 +850,7 @@ export default function InvestigatorPortal({ onClose }: InvestigatorPortalProps)
                 <div className="session-time-badge">
                   <span className="console-dot" /> SESSION EXPIRES: {formattedSessionTime}
                 </div>
-                <small>s.ramesh@nic.in · MFA Verified · TLS 1.3</small>
+                <small>s.ramesh@nic.in · MFA Verified · IP: 14.139.12.5</small>
               </div>
             </div>
 
@@ -667,12 +961,12 @@ export default function InvestigatorPortal({ onClose }: InvestigatorPortalProps)
                           value={item.status}
                           onChange={(e) => {
                             e.stopPropagation();
-                            handleStatusChange(item.id, e.target.value as CaseStatus);
+                            handleStatusChangeRequest(item.id, e.target.value as CaseStatus);
                           }}
                         >
                           <option value="New">New</option>
                           <option value="Under review">Under Review</option>
-                          <option value="Confirmed Fraud">Confirmed Fraud</option>
+                          <option value="Confirmed Fraud">Confirmed Fraud (Step-Up Auth)</option>
                           <option value="False Positive">False Positive</option>
                         </select>
                         <button className="portal-case-action" aria-label={`Inspect ${item.id}`}>
@@ -724,7 +1018,7 @@ export default function InvestigatorPortal({ onClose }: InvestigatorPortalProps)
                   <div className="portal-map-label">BENGALURU SOUTH / JURISDICTION MAP</div>
                 </div>
                 <div className="portal-map-foot">
-                  <MapPinned size={15} /> Scoped Anomaly Heatmap · Bengaluru Urban
+                  <MapPinned size={15} /> Scoped Anomaly Heatmap · Bengaluru Urban (12.9716° N, 77.5946° E)
                 </div>
 
                 {/* Field Evidence Attachment Tool */}
